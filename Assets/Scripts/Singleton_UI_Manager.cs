@@ -5,7 +5,7 @@ using TMPro;
 
 public class Singleton_UI_Manager : MonoBehaviour
 {
-    [SerializeField] private TMP_Text RaycastHitName;
+    [SerializeField] TMP_Text goalCounter;
 
     public static Singleton_UI_Manager Instance { get; private set; }
 
@@ -22,8 +22,8 @@ public class Singleton_UI_Manager : MonoBehaviour
         }
     }
 
-    public void SetText(string newText)
+    public void UpdateGoalCounterUI(int successfulGoals=0, int currentGoals=0)
     {
-        RaycastHitName.text = newText;
+        goalCounter.text = $"Goal(s): {successfulGoals}/{currentGoals}";
     }
 }

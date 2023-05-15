@@ -2,9 +2,11 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+
+
 public class PlayerController : MonoBehaviour
 {
-
+    
     //Movimiento con setPosition, y el raycast para obtener el objeto de adelante
     //Consultar con Lucas como tirar muchos raycast jijiji
 
@@ -13,9 +15,12 @@ public class PlayerController : MonoBehaviour
 
     [SerializeField] float rayCastDistance = 1f;
     [SerializeField] float moveTime = 0.15f;
+    [SerializeField] LayerMask layerToIgnore;
 
     float xInput = 0, zInput = 0;
+    float radius = 0.5f;
     bool isMoving = false;
+    public bool isThereACollider;
 
     Ray ray;
     Vector3 targetPosition;
@@ -33,34 +38,17 @@ public class PlayerController : MonoBehaviour
         xInput = Input.GetAxisRaw("Horizontal");
         zInput = Input.GetAxisRaw("Vertical");
 
-        if((xInput != 0f || zInput != 0) && !isMoving)
+        if ((xInput != 0f || zInput != 0) && !isMoving)
+        // si quisiera que solo se pueda mover al hacer al tocar una tecla y no mantener apretado
+        //podria agregar otro a condicion que sea Input.anyKeyDown
         {
             CalculateTargetPosition();
-            StartCoroutine(Move());
+            CreateRay(); //Aca calculo la colision
+            if (!isThereACollider)
+            {
+                StartCoroutine(Move());
+            }
         }
-
-        CreateRay();
-    }
-
-    IEnumerator Move()
-    {
-        isMoving = true;
-        float timeElapsed = 0f;
-        Vector3 startPosition = capsule.position;
-        
-        while(timeElapsed < moveTime)
-        {
-            transform.position = Vector3.Lerp(startPosition, targetPosition, timeElapsed / moveTime);
-            timeElapsed += Time.deltaTime;
-            yield return null;
-        }
-        capsule.position = targetPosition;
-        isMoving = false;
-    }
-
-        void rotateCharacter(int angle)
-    {
-        capsule.localRotation = Quaternion.Euler(0, angle, 0);
     }
 
     void CalculateTargetPosition()
@@ -85,34 +73,65 @@ public class PlayerController : MonoBehaviour
             targetPosition = capsule.position + Vector3.back;
             rotateCharacter(180);
         }
-
     }
+
+    IEnumerator Move()
+    {
+        isMoving = true;
+        float timeElapsed = 0f;
+        Vector3 startPosition = capsule.position;
+        
+        while(timeElapsed < moveTime)
+        {
+            transform.position = Vector3.Lerp(startPosition, targetPosition, timeElapsed / moveTime);
+            timeElapsed += Time.deltaTime;
+            yield return null;
+        }
+        capsule.position = targetPosition;
+        isMoving = false;
+    }
+
+    void rotateCharacter(int angle)
+    {
+        capsule.localRotation = Quaternion.Euler(0, angle, 0);
+    }
+
+    /*bool CanMoveToTargetPosition()
+    {
+        //Esto funcaria en 2D 
+        //return !Physics2D.OverlapCircle(targetPosition, radius);
+        
+
+        return false;
+    }*/
+    
 
     void CreateRay()
     {
         ray = new Ray(capsule.position, capsule.forward);
 
         Debug.DrawRay(ray.origin, ray.direction * rayCastDistance, Color.green);
-        string UIText;
+
         if (Physics.Raycast(ray, out RaycastHit hit, rayCastDistance))
         {
-            Debug.DrawRay(ray.origin, ray.direction * rayCastDistance, Color.blue);
-            //Debug.Log(hit.transform.name);
-            UIText = hit.transform.name;
+            if (hit.transform.gameObject.CompareTag("Box"))
+            {
+                Box_Controller bc = hit.transform.parent.GetComponent<Box_Controller>();
+                //bc.Test(targetPosition)
+                bc.Test(hit.normal);
+            }
+            isThereACollider = true;
         }
-        else UIText = "No hay nada";
+        else
+        {
+            isThereACollider = false;
 
-        ChangeUIText(UIText);
-    }
-
-    void ChangeUIText(string text)
-    {
-        Singleton_UI_Manager.Instance.SetText(text);
+        }
     }
 
     private void OnDrawGizmos()
     {
-        Gizmos.DrawWireSphere(targetPosition, 0.5f);
+        Gizmos.DrawWireSphere(targetPosition, radius);
     }
 
 }
